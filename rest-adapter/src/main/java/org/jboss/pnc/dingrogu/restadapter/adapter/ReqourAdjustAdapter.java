@@ -1,9 +1,13 @@
 package org.jboss.pnc.dingrogu.restadapter.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.pnc.api.constants.BuildConfigurationParameterKeys;
 import org.jboss.pnc.api.dto.Request;
@@ -12,7 +16,6 @@ import org.jboss.pnc.api.reqour.dto.AdjustResponse;
 import org.jboss.pnc.api.reqour.dto.InternalGitRepositoryUrl;
 import org.jboss.pnc.dingrogu.api.dto.adapter.ReqourAdjustDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.AdapterEndpoint;
-import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.common.GitUrlParser;
 import org.jboss.pnc.dingrogu.common.TaskHelper;
 import org.jboss.pnc.dingrogu.restadapter.client.ReqourClient;
@@ -20,14 +23,11 @@ import org.jboss.pnc.rex.api.CallbackEndpoint;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.rex.model.requests.StopRequest;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@ApplicationScoped
-public class ReqourAdjustAdapter implements Adapter<ReqourAdjustDTO> {
+import io.quarkus.logging.Log;
+
+public abstract class ReqourAdjustAdapter implements Adapter<ReqourAdjustDTO> {
 
     @ConfigProperty(name = "dingrogu.url")
     String dingroguUrl;
@@ -121,11 +121,6 @@ public class ReqourAdjustAdapter implements Adapter<ReqourAdjustDTO> {
                 Log.error("Error happened in callback adapter", ex);
             }
         }
-    }
-
-    @Override
-    public String getNotificationEndpoint(String adapterUrl) {
-        return adapterUrl + WorkflowEndpoint.BUILD_REX_NOTIFY;
     }
 
     @Override

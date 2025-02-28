@@ -1,28 +1,28 @@
 package org.jboss.pnc.dingrogu.restadapter.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Optional;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.pnc.api.dto.Request;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteRequest;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteResult;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverPromoteDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.AdapterEndpoint;
-import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.common.TaskHelper;
 import org.jboss.pnc.dingrogu.restadapter.client.RepositoryDriverClient;
 import org.jboss.pnc.rex.api.CallbackEndpoint;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.rex.model.requests.StopRequest;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@ApplicationScoped
-public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverPromoteDTO> {
+import io.quarkus.logging.Log;
+
+public abstract class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverPromoteDTO> {
 
     @ConfigProperty(name = "dingrogu.url")
     String dingroguUrl;

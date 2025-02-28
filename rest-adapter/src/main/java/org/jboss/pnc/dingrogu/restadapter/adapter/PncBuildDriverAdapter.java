@@ -10,16 +10,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.pnc.api.builddriver.dto.BuildCancelRequest;
+import org.jboss.pnc.api.builddriver.dto.BuildCompleted;
+import org.jboss.pnc.api.builddriver.dto.BuildRequest;
+import org.jboss.pnc.api.builddriver.dto.BuildResponse;
 import org.jboss.pnc.api.dto.Request;
-import org.jboss.pnc.api.konfluxbuilddriver.dto.BuildCompleted;
-import org.jboss.pnc.api.konfluxbuilddriver.dto.BuildRequest;
-import org.jboss.pnc.api.konfluxbuilddriver.dto.BuildResponse;
-import org.jboss.pnc.api.konfluxbuilddriver.dto.CancelRequest;
-import org.jboss.pnc.api.repositorydriver.dto.RepositoryCreateResponse;
+import org.jboss.pnc.api.environmentdriver.dto.EnvironmentCreateResult;
 import org.jboss.pnc.api.reqour.dto.AdjustResponse;
-import org.jboss.pnc.dingrogu.api.client.KonfluxBuildDriver;
-import org.jboss.pnc.dingrogu.api.client.KonfluxBuildDriverProducer;
-import org.jboss.pnc.dingrogu.api.dto.adapter.KonfluxBuildDriverDTO;
+import org.jboss.pnc.dingrogu.api.client.PncBuildDriver;
+import org.jboss.pnc.dingrogu.api.client.PncBuildDriverProducer;
+import org.jboss.pnc.dingrogu.api.dto.adapter.PncBuildDriverDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.AdapterEndpoint;
 import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.common.TaskHelper;
@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.logging.Log;
 
 @ApplicationScoped
-public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO> {
+public class PncBuildDriverAdapter implements Adapter<PncBuildDriverDTO> {
 
     @ConfigProperty(name = "dingrogu.url")
     String dingroguUrl;
@@ -47,20 +47,20 @@ public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO>
     CallbackEndpoint callbackEndpoint;
 
     @Inject
-    KonfluxBuildDriverProducer konfluxBuildDriverProducer;
+    PncBuildDriverProducer pncBuildDriverProducer;
 
     @Inject
-    KonfluxReqourAdjustAdapter konfluxReqourAdjustAdapter;
+    PncReqourAdjustAdapter pncReqourAdjustAdapter;
 
     @Inject
-    KonfluxRepositoryDriverSetupAdapter konfluxRepositoryDriverSetupAdapter;
+    PncEnvironmentDriverCreateAdapter pncEnvironmentDriverCreateAdapter;
 
     @Inject
     TaskEndpoint taskEndpoint;
 
     @Override
     public String getAdapterName() {
-        return "konflux-build-driver";
+        return "pnc-build-driver";
     }
 
     @Override
@@ -77,38 +77,34 @@ public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO>
             Log.error(e);
             throw new RuntimeException(e);
         }
-        KonfluxBuildDriverDTO dto = objectMapper.convertValue(startRequest.getPayload(), KonfluxBuildDriverDTO.class);
+        PncBuildDriverDTO dto = objectMapper.convertValue(startRequest.getPayload(), PncBuildDriverDTO.class);
 
         Map<String, Object> pastResults = startRequest.getTaskResults();
-        Object repoDriverSetup = pastResults.get(konfluxRepositoryDriverSetupAdapter.getRexTaskName(correlationId));
-        RepositoryCreateResponse repositoryCreateResponse = objectMapper
-                .convertValue(repoDriverSetup, RepositoryCreateResponse.class);
+        Object envDriverCreate = pastResults.get(pncEnvironmentDriverCreateAdapter.getRexTaskName(correlationId));
+        EnvironmentCreateResult environmentCreateResponse = objectMapper
+                .convertValue(envDriverCreate, EnvironmentCreateResult.class);
 
-        Object reqourAdjust = pastResults.get(konfluxReqourAdjustAdapter.getRexTaskName(correlationId));
+        Object reqourAdjust = pastResults.get(pncReqourAdjustAdapter.getRexTaskName(correlationId));
         AdjustResponse adjustResponse = objectMapper.convertValue(reqourAdjust, AdjustResponse.class);
 
-        KonfluxBuildDriver konfluxBuildDriver = konfluxBuildDriverProducer
-                .getKonfluxBuildDriver(dto.getKonfluxBuildDriverUrl());
+        PncBuildDriver pncBuildDriver = pncBuildDriverProducer
+                .getPncBuildDriver(dto.getPncBuildDriverUrl());
 
         BuildRequest buildRequest = BuildRequest.builder()
-                .repositoryBuildContentId(dto.getBuildContentId())
                 .scmUrl(adjustResponse.getInternalUrl().getReadonlyUrl())
                 .scmRevision(adjustResponse.getDownstreamCommit())
-                .buildScript(dto.getBuildScript())
-                .buildTool(dto.getBuildTool())
-                .recipeImage(dto.getRecipeImage())
-                .podMemoryOverride(dto.getPodMemoryOverride())
-                .repositoryDeployUrl(repositoryCreateResponse.getRepositoryDeployUrl())
-                .repositoryDependencyUrl(repositoryCreateResponse.getRepositoryDependencyUrl())
-                .namespace(dto.getNamespace())
-                .buildToolVersion(dto.getBuildToolVersion())
-                .javaVersion(dto.getJavaVersion())
+                .scmTag(adjustResponse.getTag())
+                .command(dto.getBuildCommand())
+                .workingDirectory(environmentCreateResponse.getWorkingDirectory())
+                .environmentBaseUrl(environmentCreateResponse.getEnvironmentBaseUri().toString())
+                .debugEnabled(dto.isDebugEnabled())
                 .completionCallback(callback)
+                .heartbeatConfig(null) // TODO
                 .build();
-        Log.infof("Konflux build request: %s", buildRequest);
+        Log.infof("PNC build request: %s", buildRequest);
 
-        BuildResponse response = konfluxBuildDriver.build(buildRequest);
-        Log.infof("Konflux initial response: %s", response);
+        BuildResponse response = pncBuildDriver.build(buildRequest).toCompletableFuture().join();
+        Log.infof("PNC initial response: %s", response);
         return Optional.ofNullable(response);
     }
 
@@ -116,7 +112,7 @@ public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO>
     public void callback(String correlationId, Object object) {
         try {
             BuildCompleted response = objectMapper.convertValue(object, BuildCompleted.class);
-            Log.infof("Konflux response: %s", response);
+            Log.infof("PNC response: %s", response);
             try {
                 callbackEndpoint.succeed(getRexTaskName(correlationId), response, null);
             } catch (Exception e) {
@@ -139,7 +135,7 @@ public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO>
     @Override
     public void cancel(String correlationId, StopRequest stopRequest) {
 
-        // get own unique id created by konflux-build-driver sent back to rex in the start method
+        // get own unique id created by pnc-build-driver sent back to rex in the start method
         TaskDTO ownTask = taskEndpoint.getSpecific(getRexTaskName(correlationId));
         List<ServerResponseDTO> serverResponses = ownTask.getServerResponses();
 
@@ -148,17 +144,22 @@ public class KonfluxBuildDriverAdapter implements Adapter<KonfluxBuildDriverDTO>
         }
 
         ServerResponseDTO last = serverResponses.get(serverResponses.size() - 1);
-        BuildResponse konfluxResponse = objectMapper.convertValue(last.getBody(), BuildResponse.class);
+        BuildResponse pncResponse = objectMapper.convertValue(last.getBody(), BuildResponse.class);
 
-        KonfluxBuildDriverDTO dto = objectMapper.convertValue(stopRequest.getPayload(), KonfluxBuildDriverDTO.class);
-        KonfluxBuildDriver konfluxBuildDriver = konfluxBuildDriverProducer
-                .getKonfluxBuildDriver(dto.getKonfluxBuildDriverUrl());
+        PncBuildDriverDTO dto = objectMapper.convertValue(stopRequest.getPayload(), PncBuildDriverDTO.class);
+        PncBuildDriver pncBuildDriver = pncBuildDriverProducer
+                .getPncBuildDriver(dto.getPncBuildDriverUrl());
 
-        CancelRequest cancelRequest = CancelRequest.builder()
-                .namespace(konfluxResponse.getNamespace())
-                .pipelineId(konfluxResponse.getPipelineId())
+        Map<String, Object> pastResults = stopRequest.getTaskResults();
+        Object envDriverCreate = pastResults.get(pncEnvironmentDriverCreateAdapter.getRexTaskName(correlationId));
+        EnvironmentCreateResult environmentCreateResponse = objectMapper
+                .convertValue(envDriverCreate, EnvironmentCreateResult.class);
+
+        BuildCancelRequest buildCancelRequest = BuildCancelRequest.builder()
+                .buildEnvironmentBaseUrl(environmentCreateResponse.getEnvironmentBaseUri().toString())
+                .buildExecutionId(pncResponse.getBuildExecutionId())
                 .build();
-        konfluxBuildDriver.cancel(cancelRequest);
+        pncBuildDriver.cancel(buildCancelRequest);
     }
 
     @Override

@@ -1,27 +1,27 @@
 package org.jboss.pnc.dingrogu.restadapter.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.pnc.api.enums.BuildType;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryCreateRequest;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryCreateResponse;
 import org.jboss.pnc.api.reqour.dto.AdjustResponse;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverSetupDTO;
-import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.restadapter.client.RepositoryDriverClient;
 import org.jboss.pnc.rex.api.CallbackEndpoint;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.rex.model.requests.StopRequest;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@ApplicationScoped
-public class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSetupDTO> {
+import io.quarkus.logging.Log;
+
+public abstract class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSetupDTO> {
 
     @Inject
     RepositoryDriverClient repositoryDriverClient;
@@ -32,11 +32,15 @@ public class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSet
     @Inject
     CallbackEndpoint callbackEndpoint;
 
-    @Inject
-    ReqourAdjustAdapter reqour;
+    ReqourAdjustAdapter reqourAdjustAdapter;
 
     @Inject
     ManagedExecutor managedExecutor;
+
+    @Inject
+    public RepositoryDriverSetupAdapter(ReqourAdjustAdapter reqourAdjustAdapter) {
+        this.reqourAdjustAdapter = reqourAdjustAdapter;
+    }
 
     @Override
     public String getAdapterName() {
@@ -53,7 +57,7 @@ public class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSet
     public Optional<Object> start(String correlationId, StartRequest startRequest) {
 
         Map<String, Object> pastResults = startRequest.getTaskResults();
-        Object pastResult = pastResults.get(reqour.getRexTaskName(correlationId));
+        Object pastResult = pastResults.get(reqourAdjustAdapter.getRexTaskName(correlationId));
         AdjustResponse reqourResponse = objectMapper.convertValue(pastResult, AdjustResponse.class);
 
         List<String> repositoriesToCreate = reqourResponse.getManipulatorResult()
@@ -103,18 +107,13 @@ public class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSet
 
     /**
      * We cannot cancel this operation since it is a synchronous one
-     * 
+     *
      * @param correlationId
      * @param stopRequest
      */
     @Override
     public void cancel(String correlationId, StopRequest stopRequest) {
         return;
-    }
-
-    @Override
-    public String getNotificationEndpoint(String adapterUrl) {
-        return adapterUrl + WorkflowEndpoint.BUILD_REX_NOTIFY;
     }
 
     /**

@@ -1,21 +1,21 @@
 package org.jboss.pnc.dingrogu.restadapter.adapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Optional;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverSealDTO;
-import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.restadapter.client.RepositoryDriverClient;
 import org.jboss.pnc.rex.api.CallbackEndpoint;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.rex.model.requests.StopRequest;
 
-import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@ApplicationScoped
-public class RepositoryDriverSealAdapter implements Adapter<RepositoryDriverSealDTO> {
+import io.quarkus.logging.Log;
+
+public abstract class RepositoryDriverSealAdapter implements Adapter<RepositoryDriverSealDTO> {
 
     @Inject
     RepositoryDriverClient repositoryDriverClient;
@@ -63,11 +63,6 @@ public class RepositoryDriverSealAdapter implements Adapter<RepositoryDriverSeal
         });
 
         return Optional.empty();
-    }
-
-    @Override
-    public String getNotificationEndpoint(String adapterUrl) {
-        return adapterUrl + WorkflowEndpoint.BUILD_REX_NOTIFY;
     }
 
     /**

@@ -1,20 +1,25 @@
 package org.jboss.pnc.dingrogu.api.dto.workflow;
 
+import java.util.Map;
+
 import jakarta.validation.constraints.NotNull;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.jackson.Jacksonized;
+
 import org.jboss.pnc.api.enums.AlignmentPreference;
 import org.jboss.pnc.api.enums.BuildCategory;
 import org.jboss.pnc.api.enums.BuildType;
 import org.jboss.pnc.dingrogu.api.dto.adapter.KonfluxBuildDriverDTO;
+import org.jboss.pnc.dingrogu.api.dto.adapter.PncBuildDriverDTO;
+import org.jboss.pnc.dingrogu.api.dto.adapter.PncEnvironmentDriverCompleteDTO;
+import org.jboss.pnc.dingrogu.api.dto.adapter.PncEnvironmentDriverCreateDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverPromoteDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverSealDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverSetupDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepourAdjustDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.ReqourAdjustDTO;
 
-import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 @Jacksonized
 @Data
@@ -26,6 +31,8 @@ public class BuildWorkDTO {
     String reqourUrl;
     String repositoryDriverUrl;
     String konfluxBuildDriverUrl;
+    String pncBuildDriverUrl;
+    String pncEnvironmentDriverUrl;
 
     String scmRepoURL;
     String scmRevision;
@@ -44,6 +51,10 @@ public class BuildWorkDTO {
     Map<String, String> genericParameters;
     String buildConfigurationId;
     String correlationId;
+    boolean debugEnabled;
+    String environmentLabel;
+    String environmentImage;
+    String buildConfigId;
 
     String buildScript;
     String buildTool;
@@ -52,6 +63,7 @@ public class BuildWorkDTO {
     String namespace;
     String buildToolVersion;
     String javaVersion;
+    String buildCommand;
 
     public RepourAdjustDTO toRepourAdjustDTO() {
         String alignmentPreferenceName = null;
@@ -120,6 +132,33 @@ public class BuildWorkDTO {
                 .namespace(namespace)
                 .buildToolVersion(buildToolVersion)
                 .javaVersion(javaVersion)
+                .build();
+    }
+
+    public PncEnvironmentDriverCreateDTO toPncEnvironmentDriverCreateDTO() {
+        return PncEnvironmentDriverCreateDTO.builder()
+                .pncEnvironmentDriverUrl(pncEnvironmentDriverUrl)
+                .environmentLabel(environmentLabel)
+                .environmentImage(environmentImage)
+                .buildContentId(buildContentId)
+                .podMemoryOverride(podMemoryOverride)
+                .debugEnabled(debugEnabled)
+                .buildConfigId(buildConfigId)
+                .build();
+    }
+
+    public PncBuildDriverDTO toPncBuildDriverDTO() {
+        return PncBuildDriverDTO.builder()
+                .pncBuildDriverUrl(pncBuildDriverUrl)
+                .buildCommand(buildCommand)
+                .debugEnabled(debugEnabled)
+                .build();
+    }
+
+    public PncEnvironmentDriverCompleteDTO toPncEnvironmentDriverCompleteDTO() {
+        return PncEnvironmentDriverCompleteDTO.builder()
+                .pncEnvironmentDriverUrl(pncEnvironmentDriverUrl)
+                .debugEnabled(debugEnabled)
                 .build();
     }
 

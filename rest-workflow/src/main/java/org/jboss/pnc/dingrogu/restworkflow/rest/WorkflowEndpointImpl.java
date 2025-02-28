@@ -3,17 +3,19 @@ package org.jboss.pnc.dingrogu.restworkflow.rest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+
 import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
+import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.BuildWorkDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DeliverablesAnalysisWorkflowDTO;
-import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DummyWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.RepositoryCreationDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
-import org.jboss.pnc.dingrogu.restworkflow.workflows.BuildWorkflow;
-import org.jboss.pnc.dingrogu.restworkflow.workflows.DeliverablesAnalysisWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.BrewPushWorkflow;
+import org.jboss.pnc.dingrogu.restworkflow.workflows.DeliverablesAnalysisWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.DummyWorkflow;
+import org.jboss.pnc.dingrogu.restworkflow.workflows.KonfluxBuildWorkflow;
+import org.jboss.pnc.dingrogu.restworkflow.workflows.PncBuildWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.RepositoryCreationWorkflow;
 import org.jboss.pnc.rex.model.requests.NotificationRequest;
 import org.jboss.pnc.rex.model.requests.StartRequest;
@@ -33,7 +35,10 @@ public class WorkflowEndpointImpl implements WorkflowEndpoint {
     RepositoryCreationWorkflow repositoryCreationWorkflow;
 
     @Inject
-    BuildWorkflow buildWorkflow;
+    KonfluxBuildWorkflow konfluxBuildWorkflow;
+
+    @Inject
+    PncBuildWorkflow pncBuildWorkflow;
 
     @Inject
     DeliverablesAnalysisWorkflow deliverablesAnalysisWorkflow;
@@ -62,18 +67,33 @@ public class WorkflowEndpointImpl implements WorkflowEndpoint {
     }
 
     @Override
-    public CorrelationId startBuildWorkflow(BuildWorkDTO buildWorkDTO) {
-        return buildWorkflow.submitWorkflow(buildWorkDTO);
+    public CorrelationId startKonfluxBuildWorkflow(final BuildWorkDTO buildWorkDTO) {
+        return konfluxBuildWorkflow.submitWorkflow(buildWorkDTO);
     }
 
     @Override
-    public CorrelationId startBuildWorkflowFromRex(StartRequest startRequest) {
-        return buildWorkflow.submitWorkflow(startRequest);
+    public CorrelationId startKonfluxBuildWorkflowFromRex(final StartRequest startRequest) {
+        return konfluxBuildWorkflow.submitWorkflow(startRequest);
     }
 
     @Override
-    public Response buildWorkflowNotificationFromRex(NotificationRequest notificationRequest) {
-        return buildWorkflow.rexNotification(notificationRequest);
+    public Response buildKonfluxWorkflowNotificationFromRex(final NotificationRequest notificationRequest) {
+        return konfluxBuildWorkflow.rexNotification(notificationRequest);
+    }
+
+    @Override
+    public CorrelationId startPncBuildWorkflow(final BuildWorkDTO buildWorkDTO) {
+        return pncBuildWorkflow.submitWorkflow(buildWorkDTO);
+    }
+
+    @Override
+    public CorrelationId startPncBuildWorkflowFromRex(final StartRequest startRequest) {
+        return pncBuildWorkflow.submitWorkflow(startRequest);
+    }
+
+    @Override
+    public Response buildPncWorkflowNotificationFromRex(final NotificationRequest notificationRequest) {
+        return pncBuildWorkflow.rexNotification(notificationRequest);
     }
 
     @Override
