@@ -1,8 +1,11 @@
 package org.jboss.pnc.dingrogu.restadapter.adapter;
 
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+
 import jakarta.inject.Inject;
+
+import org.instancio.Instancio;
 import org.jboss.pnc.api.enums.ResultStatus;
 import org.jboss.pnc.api.reqour.dto.AdjustRequest;
 import org.jboss.pnc.api.reqour.dto.AdjustResponse;
@@ -15,16 +18,15 @@ import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.instancio.Instancio;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 class ReqourAdjustAdapterTest {
 
     @Inject
-    ReqourAdjustAdapter reqourAdjustAdapter;
+    KonfluxReqourAdjustAdapter konfluxReqourAdjustAdapter;
 
     @InjectMock
     ReqourClient reqourClient;
@@ -34,9 +36,10 @@ class ReqourAdjustAdapterTest {
 
     @Test
     void getAdapterName() {
-        assertThat(reqourAdjustAdapter.getAdapterName()).isNotEmpty();
-        assertThat(reqourAdjustAdapter.getAdapterName()).contains("reqour");
-        assertThat(reqourAdjustAdapter.getAdapterName()).contains("adjust");
+        assertThat(konfluxReqourAdjustAdapter.getAdapterName()).isNotEmpty();
+        assertThat(konfluxReqourAdjustAdapter.getAdapterName()).contains("konflux");
+        assertThat(konfluxReqourAdjustAdapter.getAdapterName()).contains("reqour");
+        assertThat(konfluxReqourAdjustAdapter.getAdapterName()).contains("adjust");
     }
 
     @Test
@@ -55,7 +58,7 @@ class ReqourAdjustAdapterTest {
         StartRequest startRequest = StartRequest.builder().payload(dto).build();
 
         // send request
-        reqourAdjustAdapter.start(correlationId, startRequest);
+        konfluxReqourAdjustAdapter.start(correlationId, startRequest);
 
         // capture the parameters sent to ReqourClient
         ArgumentCaptor<AdjustRequest> captor = ArgumentCaptor.forClass(AdjustRequest.class);
@@ -86,11 +89,11 @@ class ReqourAdjustAdapterTest {
                 .build();
 
         String correlationId = "correlationid-1234";
-        reqourAdjustAdapter.callback(correlationId, adjustResponse);
+        konfluxReqourAdjustAdapter.callback(correlationId, adjustResponse);
 
         // verify that the successful callback is called
         Mockito.verify(callbackEndpoint)
-                .succeed(reqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
+                .succeed(konfluxReqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
     }
 
     @Test
@@ -104,10 +107,10 @@ class ReqourAdjustAdapterTest {
                 .build();
 
         String correlationId = "correlationid-1234";
-        reqourAdjustAdapter.callback(correlationId, adjustResponse);
+        konfluxReqourAdjustAdapter.callback(correlationId, adjustResponse);
 
         // verify that the fail callback is called
-        Mockito.verify(callbackEndpoint).fail(reqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
+        Mockito.verify(callbackEndpoint).fail(konfluxReqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
     }
 
     @Test
@@ -117,10 +120,10 @@ class ReqourAdjustAdapterTest {
         AdjustResponse adjustResponse = null;
 
         String correlationId = "correlationid-1234";
-        reqourAdjustAdapter.callback(correlationId, adjustResponse);
+        konfluxReqourAdjustAdapter.callback(correlationId, adjustResponse);
 
         // verify that the fail callback is called
-        Mockito.verify(callbackEndpoint).fail(reqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
+        Mockito.verify(callbackEndpoint).fail(konfluxReqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
     }
 
     @Test
@@ -130,9 +133,9 @@ class ReqourAdjustAdapterTest {
         String adjustResponse = "test-me-i-shoul-fail";
 
         String correlationId = "correlationid-1234";
-        reqourAdjustAdapter.callback(correlationId, adjustResponse);
+        konfluxReqourAdjustAdapter.callback(correlationId, adjustResponse);
 
         // verify that the fail callback is called
-        Mockito.verify(callbackEndpoint).fail(reqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
+        Mockito.verify(callbackEndpoint).fail(konfluxReqourAdjustAdapter.getRexTaskName(correlationId), adjustResponse, null);
     }
 }

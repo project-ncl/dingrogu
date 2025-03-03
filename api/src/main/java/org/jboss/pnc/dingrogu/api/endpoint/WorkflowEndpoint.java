@@ -6,11 +6,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
+import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.BuildWorkDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DeliverablesAnalysisWorkflowDTO;
-import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DummyWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.RepositoryCreationDTO;
 import org.jboss.pnc.rex.model.requests.NotificationRequest;
@@ -28,7 +29,8 @@ public interface WorkflowEndpoint {
 
     String BREW_PUSH_REX_NOTIFY = "/workflow/brew-push/rex-notify";
     String REPOSITORY_CREATION_REX_NOTIFY = "/workflow/repository-creation/rex-notify";
-    String BUILD_REX_NOTIFY = "/workflow/build/rex-notify";
+    String KONFLUX_BUILD_REX_NOTIFY = "/workflow/konflux-build/rex-notify";
+    String PNC_BUILD_REX_NOTIFY = "/workflow/pnc-build/rex-notify";
     String DELIVERABLES_ANALYSIS_REX_NOTIFY = "/workflow/deliverables-analysis/rex-notify";
     String DUMMY_REX_NOTIFY = "/workflow/dummy/rex-notify";
 
@@ -61,29 +63,54 @@ public interface WorkflowEndpoint {
     Response repositoryCreationNotificationFromRex(NotificationRequest notificationRequest);
 
     /**
-     * Start the build workflow. The build workflow will be driven from Rex itself, but we leave it here for debug
+     * Start the Konflux build workflow. The build workflow will be driven from Rex itself, but we leave it here for debug
      * purposes
      *
      * @param buildWorkDTO dto
      * @return DTO of the correlationId
      */
-    @Path("/workflow/build/start")
+    @Path("/workflow/konflux-build/start")
     @POST
-    CorrelationId startBuildWorkflow(BuildWorkDTO buildWorkDTO);
+    CorrelationId startKonfluxBuildWorkflow(BuildWorkDTO buildWorkDTO);
 
     /**
-     * Start the build workflow, accepting the Rex's StartRequest DTO
+     * Start the Konflux build workflow, accepting the Rex's StartRequest DTO
      *
      * @param startRequest Rex startRequest start
      * @return DTO of the correlationId
      */
-    @Path("/workflow/build/rex-start")
+    @Path("/workflow/konflux-build/rex-start")
     @POST
-    CorrelationId startBuildWorkflowFromRex(StartRequest startRequest);
+    CorrelationId startKonfluxBuildWorkflowFromRex(StartRequest startRequest);
 
-    @Path(BUILD_REX_NOTIFY)
+    @Path(KONFLUX_BUILD_REX_NOTIFY)
     @POST
-    Response buildWorkflowNotificationFromRex(NotificationRequest notificationRequest);
+    Response buildKonfluxWorkflowNotificationFromRex(NotificationRequest notificationRequest);
+
+    /**
+     * Start the PNC build workflow. The build workflow will be driven from Rex itself, but we leave it here for debug
+     * purposes
+     *
+     * @param buildWorkDTO dto
+     * @return DTO of the correlationId
+     */
+    @Path("/workflow/pnc-build/start")
+    @POST
+    CorrelationId startPncBuildWorkflow(BuildWorkDTO buildWorkDTO);
+
+    /**
+     * Start the PNC build workflow, accepting the Rex's StartRequest DTO
+     *
+     * @param startRequest Rex startRequest start
+     * @return DTO of the correlationId
+     */
+    @Path("/workflow/pnc-build/rex-start")
+    @POST
+    CorrelationId startPncBuildWorkflowFromRex(StartRequest startRequest);
+
+    @Path(PNC_BUILD_REX_NOTIFY)
+    @POST
+    Response buildPncWorkflowNotificationFromRex(NotificationRequest notificationRequest);
 
     /**
      * Start the deliverables-analysis workflow

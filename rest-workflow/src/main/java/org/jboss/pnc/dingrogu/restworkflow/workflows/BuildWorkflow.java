@@ -1,10 +1,17 @@
 package org.jboss.pnc.dingrogu.restworkflow.workflows;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.pnc.api.dto.Request;
 import org.jboss.pnc.api.enums.ArtifactQuality;
@@ -12,12 +19,9 @@ import org.jboss.pnc.api.enums.BuildCategory;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryArtifact;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteResult;
 import org.jboss.pnc.api.reqour.dto.AdjustResponse;
-import org.jboss.pnc.common.log.MDCUtils;
 import org.jboss.pnc.dingrogu.api.dto.workflow.BuildExecutionConfigurationSimplifiedDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.BuildWorkDTO;
-import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
 import org.jboss.pnc.dingrogu.common.NotificationHelper;
-import org.jboss.pnc.dingrogu.restadapter.adapter.KonfluxBuildDriverAdapter;
 import org.jboss.pnc.dingrogu.restadapter.adapter.RepositoryDriverPromoteAdapter;
 import org.jboss.pnc.dingrogu.restadapter.adapter.RepositoryDriverSealAdapter;
 import org.jboss.pnc.dingrogu.restadapter.adapter.RepositoryDriverSetupAdapter;
@@ -29,12 +33,9 @@ import org.jboss.pnc.model.Artifact;
 import org.jboss.pnc.model.TargetRepository;
 import org.jboss.pnc.rex.api.QueueEndpoint;
 import org.jboss.pnc.rex.api.TaskEndpoint;
-import org.jboss.pnc.rex.dto.ConfigurationDTO;
 import org.jboss.pnc.rex.dto.CreateTaskDTO;
-import org.jboss.pnc.rex.dto.EdgeDTO;
 import org.jboss.pnc.rex.dto.ServerResponseDTO;
 import org.jboss.pnc.rex.dto.TaskDTO;
-import org.jboss.pnc.rex.dto.requests.CreateGraphRequest;
 import org.jboss.pnc.rex.model.requests.NotificationRequest;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.spi.BuildResult;
@@ -44,35 +45,22 @@ import org.jboss.pnc.spi.executor.BuildExecutionConfiguration;
 import org.jboss.pnc.spi.repositorymanager.RepositoryManagerResult;
 import org.jboss.pnc.spi.repour.RepourResult;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.logging.Log;
 
 /**
  * Build process workflow implementation
  */
-@ApplicationScoped
-public class BuildWorkflow implements Workflow<BuildWorkDTO> {
+public abstract class BuildWorkflow implements Workflow<BuildWorkDTO> {
 
-    @Inject
-    ReqourAdjustAdapter reqour;
+    ReqourAdjustAdapter reqourAdjustAdapter;
 
-    @Inject
-    RepositoryDriverSetupAdapter repoSetup;
+    RepositoryDriverSetupAdapter repositoryDriverSetupAdapter;
 
-    @Inject
-    KonfluxBuildDriverAdapter konflux;
+    RepositoryDriverSealAdapter repositoryDriverSealAdapter;
 
-    @Inject
-    RepositoryDriverSealAdapter repoSeal;
-
-    @Inject
-    RepositoryDriverPromoteAdapter repoPromote;
+    RepositoryDriverPromoteAdapter repositoryDriverPromoteAdapter;
 
     @Inject
     TaskEndpoint taskEndpoint;
@@ -95,166 +83,15 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
     @ConfigProperty(name = "rexclient.build.queue_size")
     int rexQueueSize;
 
-    @Override
-    public CorrelationId submitWorkflow(BuildWorkDTO buildWorkDTO) throws WorkflowSubmissionException {
-        CorrelationId correlationId;
-        if (buildWorkDTO.getCorrelationId() == null) {
-            correlationId = CorrelationId.generateUnique();
-        } else {
-            correlationId = new CorrelationId(buildWorkDTO.getCorrelationId());
-        }
-
-        try {
-            CreateTaskDTO taskAlignReqour = reqour
-                    .generateRexTask(ownUrl, correlationId.getId(), buildWorkDTO, buildWorkDTO.toReqourAdjustDTO());
-            CreateTaskDTO taskRepoSetup = repoSetup.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    buildWorkDTO,
-                    buildWorkDTO.toRepositoryDriverSetupDTO());
-
-            CreateTaskDTO konfluxSetup = konflux.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    buildWorkDTO,
-                    buildWorkDTO.toKonfluxBuildDriverDTO());
-
-            CreateTaskDTO taskRepoSeal = repoSeal.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    buildWorkDTO,
-                    buildWorkDTO.toRepositoryDriverSealDTO());
-            CreateTaskDTO taskRepoPromote = repoPromote.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    buildWorkDTO,
-                    buildWorkDTO.toRepositoryDriverPromoteDTO());
-
-            List<CreateTaskDTO> tasks = List
-                    .of(taskAlignReqour, taskRepoSetup, konfluxSetup, taskRepoSeal, taskRepoPromote);
-            Map<String, CreateTaskDTO> vertices = getVertices(tasks);
-
-            EdgeDTO alignToRepoSetup = EdgeDTO.builder()
-                    .source(taskRepoSetup.name)
-                    .target(taskAlignReqour.name)
-                    .build();
-
-            EdgeDTO repoSetupToKonflux = EdgeDTO.builder().source(konfluxSetup.name).target(taskRepoSetup.name).build();
-            EdgeDTO alignToKonflux = EdgeDTO.builder().source(konfluxSetup.name).target(taskAlignReqour.name).build();
-            EdgeDTO konfluxSetupToRepoSeal = EdgeDTO.builder()
-                    .source(taskRepoSeal.name)
-                    .target(konfluxSetup.name)
-                    .build();
-            EdgeDTO repoSealToRepoPromote = EdgeDTO.builder()
-                    .source(taskRepoPromote.name)
-                    .target(taskRepoSeal.name)
-                    .build();
-
-            Set<EdgeDTO> edges = Set.of(
-                    alignToRepoSetup,
-                    alignToKonflux,
-                    repoSetupToKonflux,
-                    konfluxSetupToRepoSeal,
-                    repoSealToRepoPromote);
-
-            ConfigurationDTO configurationDTO = ConfigurationDTO.builder()
-                    .mdcHeaderKeyMapping(MDCUtils.HEADER_KEY_MAPPING)
-                    .build();
-            CreateGraphRequest graphRequest = new CreateGraphRequest(
-                    correlationId.getId(),
-                    rexQueueName,
-                    configurationDTO,
-                    edges,
-                    vertices);
-            setRexQueueSize(queueEndpoint, rexQueueName, rexQueueSize);
-            taskEndpoint.start(graphRequest);
-
-            return correlationId;
-
-        } catch (Exception e) {
-            throw new WorkflowSubmissionException(e);
-        }
-    }
-
-    /**
-     * Variant of submitWorkflow accepting the Rex startRequest
-     *
-     * @param startRequest
-     * @return
-     * @throws WorkflowSubmissionException
-     */
-    public CorrelationId submitWorkflow(StartRequest startRequest) throws WorkflowSubmissionException {
-        BuildWorkDTO buildWorkDTO = objectMapper.convertValue(startRequest.getPayload(), BuildWorkDTO.class);
-        CorrelationId correlationId = CorrelationId.generateUnique();
-
-        try {
-            CreateTaskDTO taskAlignReqour = reqour
-                    .generateRexTask(ownUrl, correlationId.getId(), startRequest, buildWorkDTO.toReqourAdjustDTO());
-            CreateTaskDTO taskRepoSetup = repoSetup.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    startRequest,
-                    buildWorkDTO.toRepositoryDriverSetupDTO());
-            CreateTaskDTO konfluxSetup = konflux.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    startRequest,
-                    buildWorkDTO.toKonfluxBuildDriverDTO());
-            CreateTaskDTO taskRepoSeal = repoSeal.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    startRequest,
-                    buildWorkDTO.toRepositoryDriverSealDTO());
-            CreateTaskDTO taskRepoPromote = repoPromote.generateRexTask(
-                    ownUrl,
-                    correlationId.getId(),
-                    startRequest,
-                    buildWorkDTO.toRepositoryDriverPromoteDTO());
-
-            List<CreateTaskDTO> tasks = List
-                    .of(taskAlignReqour, taskRepoSetup, konfluxSetup, taskRepoSeal, taskRepoPromote);
-            Map<String, CreateTaskDTO> vertices = getVertices(tasks);
-
-            EdgeDTO alignToRepoSetup = EdgeDTO.builder()
-                    .source(taskRepoSetup.name)
-                    .target(taskAlignReqour.name)
-                    .build();
-            EdgeDTO repoSetupToKonflux = EdgeDTO.builder().source(konfluxSetup.name).target(taskRepoSetup.name).build();
-            EdgeDTO alignToKonflux = EdgeDTO.builder().source(konfluxSetup.name).target(taskAlignReqour.name).build();
-            EdgeDTO konfluxSetupToRepoSeal = EdgeDTO.builder()
-                    .source(taskRepoSeal.name)
-                    .target(konfluxSetup.name)
-                    .build();
-            EdgeDTO repoSealToRepoPromote = EdgeDTO.builder()
-                    .source(taskRepoPromote.name)
-                    .target(taskRepoSeal.name)
-                    .build();
-
-            Set<EdgeDTO> edges = Set.of(
-                    alignToRepoSetup,
-                    repoSetupToKonflux,
-                    alignToKonflux,
-                    konfluxSetupToRepoSeal,
-                    repoSealToRepoPromote);
-
-            ConfigurationDTO configurationDTO = ConfigurationDTO.builder()
-                    .mdcHeaderKeyMapping(MDCUtils.HEADER_KEY_MAPPING)
-                    .build();
-            CreateGraphRequest graphRequest = new CreateGraphRequest(
-                    correlationId.getId(),
-                    rexQueueName,
-                    configurationDTO,
-                    edges,
-                    vertices);
-
-            setRexQueueSize(queueEndpoint, rexQueueName, rexQueueSize);
-            taskEndpoint.start(graphRequest);
-
-            return correlationId;
-
-        } catch (Exception e) {
-            throw new WorkflowSubmissionException(e);
-        }
+    @Inject
+    public BuildWorkflow(final ReqourAdjustAdapter reqourAdjustAdapter,
+                         final RepositoryDriverSetupAdapter repositoryDriverSetupAdapter,
+                         final RepositoryDriverSealAdapter repositoryDriverSealAdapter,
+                         final RepositoryDriverPromoteAdapter repositoryDriverPromoteAdapter) {
+        this.reqourAdjustAdapter = reqourAdjustAdapter;
+        this.repositoryDriverSetupAdapter = repositoryDriverSetupAdapter;
+        this.repositoryDriverSealAdapter = repositoryDriverSealAdapter;
+        this.repositoryDriverPromoteAdapter = repositoryDriverPromoteAdapter;
     }
 
     @Override
@@ -292,7 +129,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
         return Response.ok().build();
     }
 
-    private static Map<String, CreateTaskDTO> getVertices(List<CreateTaskDTO> tasks) {
+    protected static Map<String, CreateTaskDTO> getVertices(List<CreateTaskDTO> tasks) {
         Map<String, CreateTaskDTO> vertices = new HashMap<>();
         for (CreateTaskDTO task : tasks) {
             vertices.put(task.name, task);
@@ -302,7 +139,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
 
     /**
      * Improve this as we get results from Konflux
-     * 
+     *
      * @param tasks
      * @param correlationId
      * @return
@@ -431,7 +268,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
     }
 
     private Optional<AdjustResponse> getReqourResult(Set<TaskDTO> tasks, String correlationId) {
-        Optional<TaskDTO> task = findTask(tasks, reqour.getRexTaskName(correlationId));
+        Optional<TaskDTO> task = findTask(tasks, reqourAdjustAdapter.getRexTaskName(correlationId));
 
         if (task.isEmpty()) {
             Log.info("repour task is empty");
@@ -454,10 +291,10 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
 
     private Optional<RepositoryManagerResult> getRepositoryManagerResult(Set<TaskDTO> tasks, String correlationId) {
 
-        Optional<TaskDTO> task = findTask(tasks, repoPromote.getRexTaskName(correlationId));
+        Optional<TaskDTO> task = findTask(tasks, repositoryDriverPromoteAdapter.getRexTaskName(correlationId));
 
         if (task.isEmpty()) {
-            Log.infof("Repo promote task is supposed to be: %s", repoPromote.getRexTaskName(correlationId));
+            Log.infof("Repo promote task is supposed to be: %s", repositoryDriverPromoteAdapter.getRexTaskName(correlationId));
             for (TaskDTO taskTemp : tasks) {
                 Log.infof("Present: task: %s", taskTemp.getName());
             }
