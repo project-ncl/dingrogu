@@ -40,7 +40,7 @@ public class DummyWorkflow implements Workflow<DummyWorkflowDTO> {
     public CorrelationId submitWorkflow(DummyWorkflowDTO dummyWorkflowDTO) throws WorkflowSubmissionException {
         CorrelationId correlationId = CorrelationId.generateUnique();
 
-        Map<String, String> mdcMap = MDCUtils.getHeadersFromMDC();
+        Map<String, String> mdcMap = MDCUtils.HEADER_KEY_MAPPING;
         for (String key : mdcMap.keySet()) {
             log.info("Inside dummy workflow -> {}::{}", key, mdcMap.get(key));
         }
