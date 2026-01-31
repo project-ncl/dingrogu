@@ -18,17 +18,14 @@ import org.jboss.pnc.api.builddriver.dto.BuildCompleted;
 import org.jboss.pnc.api.constants.MDCHeaderKeys;
 import org.jboss.pnc.api.dto.Request;
 import org.jboss.pnc.api.enums.ResultStatus;
-import org.jboss.pnc.api.enums.orch.CompletionStatus;
 import org.jboss.pnc.api.environmentdriver.dto.EnvironmentCreateResult;
-import org.jboss.pnc.api.orch.dto.BuildDriverResultRest;
-import org.jboss.pnc.api.orch.dto.BuildExecutionConfigurationRest;
-import org.jboss.pnc.api.orch.dto.BuildResultRest;
-import org.jboss.pnc.api.orch.dto.EnvironmentDriverResultRest;
-import org.jboss.pnc.api.orch.dto.RepositoryManagerResultRest;
-import org.jboss.pnc.api.orch.dto.RepourResultRest;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteResult;
 import org.jboss.pnc.api.reqour.dto.AdjustResponse;
 import org.jboss.pnc.api.reqour.dto.ReqourCallback;
+import org.jboss.pnc.bpm.model.BuildDriverResultRest;
+import org.jboss.pnc.bpm.model.BuildExecutionConfigurationRest;
+import org.jboss.pnc.bpm.model.BuildResultRest;
+import org.jboss.pnc.bpm.model.RepositoryManagerResultRest;
 import org.jboss.pnc.common.log.MDCUtils;
 import org.jboss.pnc.common.log.ProcessStageUtils;
 import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
@@ -65,6 +62,9 @@ import org.jboss.pnc.rex.dto.requests.CreateGraphRequest;
 import org.jboss.pnc.rex.model.requests.NotificationRequest;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.spi.builddriver.BuildDriverResult;
+import org.jboss.pnc.spi.coordinator.CompletionStatus;
+import org.jboss.pnc.spi.environment.EnvironmentDriverResult;
+import org.jboss.pnc.spi.repour.RepourResult;
 import org.slf4j.MDC;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -398,11 +398,11 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
     private BuildResultRest generateBuildResultRest(StartRequest request, Set<TaskDTO> tasks, String correlationId) {
 
         TaskResponse<AdjustResponse> reqourResult = getReqourResult(tasks, correlationId);
-        TaskResponse<RepourResultRest> repourResult = toRepourResultRest(reqourResult);
+        TaskResponse<RepourResult> repourResult = toRepourResultRest(reqourResult);
 
         TaskResponse<CompletionStatus> repoCreateResponse = getRepositoryCreateResponse(tasks, correlationId);
 
-        TaskResponse<EnvironmentDriverResultRest> environmentDriverResult = getEnvironmentDriverResultRest(
+        TaskResponse<EnvironmentDriverResult> environmentDriverResult = getEnvironmentDriverResultRest(
                 tasks,
                 correlationId);
 
@@ -425,15 +425,14 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
         // PNC-Orch just extracts the reqour data in buildExecutionConfiguration
         BuildExecutionConfigurationRest buildExecutionConfigurationRest = getBuildExecutionConfigurationRest(
                 reqourResult);
-        BuildResultRest buildResultRest = BuildResultRest.builder()
-                .completionStatus(overallStatus.completionStatus)
-                .processException(overallStatus.processException.orElse(null))
-                .buildExecutionConfiguration(buildExecutionConfigurationRest)
-                .buildDriverResult(buildDriverResult.getDTO().orElse(null))
-                .repositoryManagerResult(repoResult.getDTO().orElse(null))
-                .environmentDriverResult(environmentDriverResult.getDTO().orElse(null))
-                .repourResult(repourResult.getDTO().orElse(null))
-                .build();
+        BuildResultRest buildResultRest = new BuildResultRest(
+                overallStatus.completionStatus,
+                overallStatus.processException.orElse(null),
+                buildExecutionConfigurationRest,
+                buildDriverResult.getDTO().orElse(null),
+                repoResult.getDTO().orElse(null),
+                environmentDriverResult.getDTO().orElse(null),
+                repourResult.getDTO().orElse(null));
 
         try {
             Log.infof("Build result: %s", objectMapper.writeValueAsString(buildResultRest));
@@ -466,8 +465,8 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
     private OverallStatus determineCompletionStatus(
             TaskResponse<RepositoryManagerResultRest> repoManagerResult,
             TaskResponse<BuildCompleted> buildCompleted,
-            TaskResponse<RepourResultRest> repourResult,
-            TaskResponse<EnvironmentDriverResultRest> environmentDriverResult,
+            TaskResponse<RepourResult> repourResult,
+            TaskResponse<EnvironmentDriverResult> environmentDriverResult,
             TaskResponse<CompletionStatus> repoCreateResponse,
             TaskResponse<CompletionStatus> repoSealResponse) {
 
@@ -611,14 +610,22 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
         BuildDriverResultRest buildDriverResult = null;
 
         if (buildCompleted.getDTO().isPresent()) {
-            buildDriverResult = BuildDriverResultRest.builder()
-                    .buildStatus(BuildStatus.valueOf(buildCompleted.getDTO().get().getBuildStatus().name()))
-                    .build();
+            buildDriverResult = new BuildDriverResultRest(new BuildDriverResult() {
+                @Override
+                public BuildStatus getBuildStatus() {
+                    return BuildStatus.valueOf(buildCompleted.getDTO().get().getBuildStatus().name());
+                }
+
+                @Override
+                public Optional<String> getOutputChecksum() {
+                    return Optional.empty();
+                }
+            });
         }
         return new TaskResponse<>(buildDriverResult, buildCompleted.errorMessage);
     }
 
-    private TaskResponse<EnvironmentDriverResultRest> getEnvironmentDriverResultRest(
+    private TaskResponse<EnvironmentDriverResult> getEnvironmentDriverResultRest(
             Set<TaskDTO> tasks,
             String correlationId) {
 
@@ -638,11 +645,11 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
                 emptyResult,
                 EnvironmentCreateResult.class);
 
-        EnvironmentDriverResultRest environmentDriverResult = null;
+        EnvironmentDriverResult environmentDriverResult = null;
         if (taskResponse.getDTO().isPresent()) {
             EnvironmentCreateResult finalResult = taskResponse.getDTO().get();
             if (finalResult.getStatus() != null) {
-                environmentDriverResult = EnvironmentDriverResultRest.builder()
+                environmentDriverResult = EnvironmentDriverResult.builder()
                         .completionStatus(toCompletionStatus(finalResult.getStatus()))
                         .build();
             }
@@ -655,7 +662,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
         return CompletionStatus.valueOf(resultStatus.name());
     }
 
-    private TaskResponse<RepourResultRest> toRepourResultRest(TaskResponse<AdjustResponse> response) {
+    private TaskResponse<RepourResult> toRepourResultRest(TaskResponse<AdjustResponse> response) {
 
         if (response.getDTO().isEmpty()) {
             return new TaskResponse<>(null, response.errorMessage);
@@ -663,9 +670,9 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
 
         AdjustResponse adjustResponse = response.getDTO().get();
 
-        RepourResultRest repourResult;
+        RepourResult repourResult;
         if (adjustResponse.getCallback().getStatus().isSuccess()) {
-            repourResult = RepourResultRest.builder()
+            repourResult = RepourResult.builder()
                     .completionStatus(CompletionStatus.valueOf(adjustResponse.getCallback().getStatus().name()))
                     .executionRootName(
                             adjustResponse.getManipulatorResult().getVersioningState().getExecutionRootName())
@@ -673,7 +680,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
                             adjustResponse.getManipulatorResult().getVersioningState().getExecutionRootVersion())
                     .build();
         } else {
-            repourResult = RepourResultRest.builder()
+            repourResult = RepourResult.builder()
                     .completionStatus(CompletionStatus.valueOf(adjustResponse.getCallback().getStatus().name()))
                     .build();
         }
@@ -733,14 +740,11 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
         RepositoryManagerResultRest result = null;
 
         if (response.getDTO().isPresent()) {
-            result = RepositoryManagerResultRest.builder()
-                    .builtArtifacts(
-                            ConverterHelper.convertFromRepositoryArtifacts(response.getDTO().get().getBuiltArtifacts()))
-                    .dependencies(
-                            ConverterHelper.convertFromRepositoryArtifacts(response.getDTO().get().getDependencies()))
-                    .buildContentId(response.getDTO().get().getBuildContentId())
-                    .completionStatus(CompletionStatus.valueOf(response.getDTO().get().getStatus().name()))
-                    .build();
+            result = new RepositoryManagerResultRest(
+                    ConverterHelper.convertFromRepositoryArtifacts(response.getDTO().get().getBuiltArtifacts()),
+                    ConverterHelper.convertFromRepositoryArtifacts(response.getDTO().get().getDependencies()),
+                    response.getDTO().get().getBuildContentId(),
+                    CompletionStatus.valueOf(response.getDTO().get().getStatus().name()));
         }
 
         return new TaskResponse<>(result, response.errorMessage);
