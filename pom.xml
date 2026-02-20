@@ -24,8 +24,8 @@
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
         <version.source.plugin>3.4.0</version.source.plugin>
-        <version.pnc>3.4.2</version.pnc>
-        <version.pnc-api>3.4.3</version.pnc-api>
+        <version.pnc>3.5.0-SNAPSHOT</version.pnc>
+        <version.pnc-api>3.5.0-SNAPSHOT</version.pnc-api>
         <version.pnc-common>3.4.0</version.pnc-common>
         <version.rex>1.2.2</version.rex>
         <version.commons-lang>3.20.0</version.commons-lang>
@@ -137,6 +137,16 @@
                 <artifactId>pnc-common</artifactId>
                 <version>${version.pnc-common}</version>
                 <classifier>jakarta</classifier>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.pnc</groupId>
+                        <artifactId>pnc-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.pnc</groupId>
+                        <artifactId>pnc-api-constants</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.pnc</groupId>
