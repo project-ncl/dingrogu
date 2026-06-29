@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import org.jboss.pnc.api.enums.AlignmentPreference;
 import org.jboss.pnc.api.enums.BuildCategory;
 import org.jboss.pnc.api.enums.BuildType;
+import org.jboss.pnc.api.enums.RebuildMode;
 import org.jboss.pnc.dingrogu.api.dto.adapter.BuildDriverDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.EnvironmentDriverCompleteDTO;
 import org.jboss.pnc.dingrogu.api.dto.adapter.EnvironmentDriverCreateDTO;
@@ -42,6 +43,7 @@ public class BuildWorkDTO {
     boolean tempBuild;
 
     AlignmentPreference alignmentPreference;
+    RebuildMode rebuildMode;
     @NotNull
     String buildContentId;
     String buildConfigName;
