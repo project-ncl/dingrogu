@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.pnc.api.enums.AlignmentPreference;
+import org.jboss.pnc.api.enums.RebuildMode;
 import org.jboss.pnc.enums.BuildType;
 import org.jboss.pnc.enums.SystemImageType;
 import org.jboss.pnc.spi.executor.BuildExecutionConfiguration;
@@ -158,5 +159,10 @@ public class BuildExecutionConfigurationSimplifiedDTO implements BuildExecutionC
     @Override
     public List<ArtifactRepository> getArtifactRepositories() {
         return List.of();
+    }
+
+    @Override
+    public RebuildMode getRebuildMode() {
+        return null;
     }
 }
