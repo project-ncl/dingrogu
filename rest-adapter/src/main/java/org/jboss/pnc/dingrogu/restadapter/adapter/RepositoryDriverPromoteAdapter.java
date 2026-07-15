@@ -197,4 +197,9 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
     public boolean shouldUseHeartbeat() {
         return true;
     }
+
+    @Override
+    public boolean shouldGetResultsFromDependencies() {
+        return true;
+    }
 }
