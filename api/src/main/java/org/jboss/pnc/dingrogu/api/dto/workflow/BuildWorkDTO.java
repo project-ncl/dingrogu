@@ -34,6 +34,7 @@ public class BuildWorkDTO {
     String environmentDriverUrl;
     @NotNull
     String bifrostUrl;
+    String orchUrl;
 
     String scmRepoURL;
     String scmRevision;
@@ -60,6 +61,7 @@ public class BuildWorkDTO {
 
     String buildScript;
     String podMemoryOverride;
+    Map<String, String> environmentParameters;
 
     public RepourAdjustDTO toRepourAdjustDTO() {
         String alignmentPreferenceName = null;
@@ -158,11 +160,14 @@ public class BuildWorkDTO {
     public RepositoryDriverPromoteDTO toRepositoryDriverPromoteDTO() {
         return RepositoryDriverPromoteDTO.builder()
                 .repositoryDriverUrl(repositoryDriverUrl)
+                .orchUrl(orchUrl)
                 .buildContentId(buildContentId)
                 .buildType(buildType)
                 .buildCategory(buildCategory)
                 .tempBuild(tempBuild)
                 .buildConfigurationId(buildConfigurationId)
+                .buildConfigurationName(buildConfigName)
+                .environmentParameters(environmentParameters)
                 .build();
 
     }

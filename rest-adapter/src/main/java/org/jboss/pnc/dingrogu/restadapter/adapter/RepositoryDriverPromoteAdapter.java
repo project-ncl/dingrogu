@@ -14,13 +14,16 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.pnc.api.dto.Request;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteRequest;
 import org.jboss.pnc.api.repositorydriver.dto.RepositoryPromoteResult;
+import org.jboss.pnc.api.reqour.dto.AdjustResponse;
 import org.jboss.pnc.common.log.ProcessStageUtils;
 import org.jboss.pnc.dingrogu.api.dto.adapter.ProcessStage;
 import org.jboss.pnc.dingrogu.api.dto.adapter.RepositoryDriverPromoteDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.AdapterEndpoint;
 import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.common.TaskHelper;
+import org.jboss.pnc.dingrogu.restadapter.client.OrchClient;
 import org.jboss.pnc.dingrogu.restadapter.client.RepositoryDriverClient;
+import org.jboss.pnc.dto.Build;
 import org.jboss.pnc.rex.api.CallbackEndpoint;
 import org.jboss.pnc.rex.model.requests.StartRequest;
 import org.jboss.pnc.rex.model.requests.StopRequest;
@@ -39,7 +42,13 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
     RepositoryDriverClient repositoryDriverClient;
 
     @Inject
+    ReqourAdjustAdapter adjustAdapter;
+
+    @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    OrchClient orchClient;
 
     @Inject
     CallbackEndpoint callbackEndpoint;
@@ -73,10 +82,33 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
             throw new RuntimeException(e);
         }
 
+        RepositoryPromoteRequest.Builder promoteRequestBuilder = RepositoryPromoteRequest.builder();
+
         RepositoryDriverPromoteDTO repoPromoteDTO = objectMapper
                 .convertValue(startRequest.getPayload(), RepositoryDriverPromoteDTO.class);
 
-        RepositoryPromoteRequest promoteRequest = RepositoryPromoteRequest.builder()
+        if (startRequest.getTaskResults()
+                .get(adjustAdapter.getRexTaskName(correlationId)) instanceof AdjustResponse adjustResponse) {
+            String executionRootName = adjustResponse.getManipulatorResult()
+                    .getVersioningState()
+                    .getExecutionRootName();
+            String executionRootVersion = adjustResponse.getManipulatorResult()
+                    .getVersioningState()
+                    .getExecutionRootVersion();
+            promoteRequestBuilder = promoteRequestBuilder.rtBuildName(executionRootName)
+                    .rtBuildVersion(executionRootVersion);
+
+            // NCL-9776: the actual startTime is available only in Orch and Rex at this point, and unfortunately, it's a
+            // required Artifactory parameter in BuildInfos
+            Optional<Build> buildRecord = orchClient
+                    .getBuildRecord(repoPromoteDTO.getOrchUrl(), parseBuildId(repoPromoteDTO.getBuildContentId()));
+            if (buildRecord.isPresent()) {
+                promoteRequestBuilder.rtBuildStartTime(buildRecord.get().getStartTime());
+            }
+        }
+        ;
+
+        RepositoryPromoteRequest promoteRequest = promoteRequestBuilder
                 .buildContentId(repoPromoteDTO.getBuildContentId())
                 .buildType(repoPromoteDTO.getBuildType())
                 .buildCategory(repoPromoteDTO.getBuildCategory())
@@ -84,12 +116,22 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
                 .callback(callback)
                 .heartBeat(startRequest.getHeartbeatConfig().getRequest())
                 .buildConfigurationId(repoPromoteDTO.getBuildConfigurationId())
+                .buildConfigurationName(repoPromoteDTO.getBuildConfigurationName())
+                .rtEnvironmentTools(repoPromoteDTO.getEnvironmentParameters())
                 .build();
 
         Log.infof("DTO for repository promote request: %s", promoteRequest);
         repositoryDriverClient.promote(repoPromoteDTO.getRepositoryDriverUrl(), promoteRequest);
 
         return Optional.empty();
+    }
+
+    private String parseBuildId(String buildContentId) {
+        if (buildContentId.startsWith("build-")) {
+            return buildContentId.substring(6);
+        }
+
+        return buildContentId;
     }
 
     /**

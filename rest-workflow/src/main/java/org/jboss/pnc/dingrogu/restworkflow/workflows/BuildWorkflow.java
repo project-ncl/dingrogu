@@ -309,6 +309,12 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
                 .target(taskRepoSeal.name)
                 .build();
 
+        // NCL-9776: need to pass executionRootName and executionRootVersion to RepositoryPromoteRequest
+        EdgeDTO reqourAdjustToRepoPromote = EdgeDTO.builder()
+                .source(taskRepoPromote.name)
+                .target(taskAdjustReqour.name)
+                .build();
+
         Set<EdgeDTO> edges = Set.of(
                 adjustReqourToRepoSetup,
                 repoSetupToCreateEnv,
@@ -317,6 +323,7 @@ public class BuildWorkflow implements Workflow<BuildWorkDTO> {
                 buildToCompleteEnv,
                 completeToRepoSealEnv,
                 buildToRepoSeal,
+                reqourAdjustToRepoPromote,
                 repoSealToRepoPromote);
 
         ConfigurationDTO configurationDTO = ConfigurationDTO.builder()
