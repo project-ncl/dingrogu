@@ -87,8 +87,11 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
         RepositoryDriverPromoteDTO repoPromoteDTO = objectMapper
                 .convertValue(startRequest.getPayload(), RepositoryDriverPromoteDTO.class);
 
-        if (startRequest.getTaskResults()
-                .get(adjustAdapter.getRexTaskName(correlationId)) instanceof AdjustResponse adjustResponse) {
+        if (startRequest.getTaskResults().get(adjustAdapter.getRexTaskName(correlationId)) != null) {
+            AdjustResponse adjustResponse = objectMapper.convertValue(
+                    startRequest.getTaskResults().get(adjustAdapter.getRexTaskName(correlationId)),
+                    AdjustResponse.class);
+
             String executionRootName = adjustResponse.getManipulatorResult()
                     .getVersioningState()
                     .getExecutionRootName();
@@ -106,7 +109,6 @@ public class RepositoryDriverPromoteAdapter implements Adapter<RepositoryDriverP
                 promoteRequestBuilder.rtBuildStartTime(buildRecord.get().getStartTime());
             }
         }
-        ;
 
         RepositoryPromoteRequest promoteRequest = promoteRequestBuilder
                 .buildContentId(repoPromoteDTO.getBuildContentId())
