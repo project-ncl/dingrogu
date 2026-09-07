@@ -22,7 +22,7 @@ jobs:
 
   call-mend-ci:
     needs: build
-    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@646d9b629925d6405fb06ed1476aefd6b2cdca86 # v0.0.23
+    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@44504606badeca0291eb6c7b49d0c1c600bc68d7 # main
     with:
       project_name: 'project-ncl/dingrogu'
       SCA: true
