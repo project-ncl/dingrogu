@@ -19,7 +19,7 @@ concurrency:
 jobs:
   scan:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
-    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@a88cab5e4e59acbe6c4a4e0b3d3f8242c1efeb20 # main
+    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@f6c90e48d5b12e44a3be9a1c56bfc21923cc8824 # main
     with:
       project_name: 'project-ncl/dingrogu'
       SCA: true
