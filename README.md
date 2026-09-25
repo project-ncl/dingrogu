@@ -1,4 +1,4 @@
-# dingrogu
+# dingrogu TEST
 
 The application configures workflows to run on [Rex](https://github.com/project-ncl/rex). A particular workflow can consist of multiple Rex tasks
 interlinked together. Each Rex task represents a particular step that needs to be run to achieve the overall goal of the
