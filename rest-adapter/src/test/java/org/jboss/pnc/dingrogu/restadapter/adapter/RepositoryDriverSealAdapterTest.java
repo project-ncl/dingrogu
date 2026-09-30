@@ -53,7 +53,7 @@ class RepositoryDriverSealAdapterTest {
         // send request
         repositoryDriverSealAdapter.start(correlationId, startRequest);
 
-        // capture the parameters sent to Causeway
+        // capture the parameters sent to Repository Driver
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         Mockito.verify(client).seal(urlCaptor.capture(), captor.capture());
