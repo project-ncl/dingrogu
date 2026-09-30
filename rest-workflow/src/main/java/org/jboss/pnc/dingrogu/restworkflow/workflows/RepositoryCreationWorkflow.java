@@ -229,7 +229,6 @@ public class RepositoryCreationWorkflow implements Workflow<RepositoryCreationDT
 
     private JobNotificationType convertJobType(org.jboss.pnc.api.enums.JobNotificationType jobNotificationType) {
         return switch (jobNotificationType) {
-            case BREW_PUSH -> JobNotificationType.BREW_PUSH;
             case BUILD -> JobNotificationType.BUILD;
             case BUILD_CONFIG_CREATION -> JobNotificationType.BUILD_CONFIG_CREATION;
             case GENERIC_SETTING -> JobNotificationType.GENERIC_SETTING;
@@ -237,6 +236,7 @@ public class RepositoryCreationWorkflow implements Workflow<RepositoryCreationDT
             case PRODUCT_MILESTONE_CLOSE -> JobNotificationType.PRODUCT_MILESTONE_CLOSE;
             case SCM_REPOSITORY_CREATION -> JobNotificationType.SCM_REPOSITORY_CREATION;
             case OPERATION -> JobNotificationType.OPERATION;
+            default -> throw new IllegalArgumentException("Unexpected value: " + jobNotificationType);
         };
     }
 
