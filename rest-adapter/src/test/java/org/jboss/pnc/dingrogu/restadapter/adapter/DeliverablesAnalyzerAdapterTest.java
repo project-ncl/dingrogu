@@ -64,7 +64,7 @@ class DeliverablesAnalyzerAdapterTest {
         // send request
         deliverablesAnalyzerAdapter.start(correlationId, startRequest);
 
-        // capture the parameters sent to Causeway
+        // capture the parameters sent to Deliverables Analyzer
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<AnalyzePayload> captor = ArgumentCaptor.forClass(AnalyzePayload.class);
         Mockito.verify(client).analyze(urlCaptor.capture(), captor.capture());
@@ -95,7 +95,7 @@ class DeliverablesAnalyzerAdapterTest {
     @Test
     void failCallback() {
 
-        // given a bad response from causeway
+        // given a bad response from Deliverables Analyzer
         AnalysisReport report = AnalysisReport.builder()
                 .resultStatus(ResultStatus.FAILED)
                 .results(Instancio.createList(FinderResult.class))
@@ -111,7 +111,7 @@ class DeliverablesAnalyzerAdapterTest {
     @Test
     void noResponseCallback() {
 
-        // given a no response from causeway
+        // given no response from Deliverables Analyzer
         AnalysisReport report = null;
 
         String correlationId = "correlation-12345";
@@ -124,7 +124,7 @@ class DeliverablesAnalyzerAdapterTest {
     @Test
     void notParseableCallback() {
 
-        // given a bad DTO response from causeway that cannot be parsed to PushResult
+        // given a bad DTO response from Deliverables Analyzer that cannot be parsed to AnalysisReport
         String report = "test-me-i-shoul-fail";
 
         String correlationId = "correlationid-1234";

@@ -7,7 +7,6 @@ The latter acts as the bridge between the Rex world (generic task coordinator wi
 
 We want to have workflows for:
 - repository creation (talking with [Repour](https://github.com/project-ncl/repour))
-- brew push (talking with [Causeway](https://github.com/project-ncl/causeway))
 - build process (multiple applications)
 - deliverables-analysis (talking with [Deliverables Analyzer](https://github.com/project-ncl/deliverables-analyzer/))
 

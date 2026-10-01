@@ -51,7 +51,6 @@ public class BuildWorkDTO {
     BuildType buildType;
     BuildCategory buildCategory;
     String defaultAlignmentParams;
-    boolean brewPullActive;
     Map<String, String> genericParameters;
     String buildConfigurationId;
     String correlationId;
@@ -83,7 +82,6 @@ public class BuildWorkDTO {
                 .id(buildContentId)
                 .buildType(buildTypeName)
                 .defaultAlignmentParams(defaultAlignmentParams)
-                .brewPullActive(brewPullActive)
                 .genericParameters(genericParameters)
                 .build();
     }
@@ -100,7 +98,6 @@ public class BuildWorkDTO {
                 .id(buildContentId)
                 .buildType(buildType)
                 .defaultAlignmentParams(defaultAlignmentParams)
-                .brewPullActive(brewPullActive)
                 .genericParameters(genericParameters)
                 .build();
     }
@@ -116,7 +113,6 @@ public class BuildWorkDTO {
                 .buildType(buildTypeName)
                 .buildCategory(buildCategory)
                 .tempBuild(tempBuild)
-                .brewPullActive(brewPullActive)
                 .genericParameters(genericParameters)
                 .build();
     }
