@@ -1,6 +1,14 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>54</version>
+        <relativePath/>
+    </parent>
+
     <groupId>org.jboss.pnc.dingrogu</groupId>
     <artifactId>parent</artifactId>
     <version>3.5.7-SNAPSHOT</version>
@@ -13,8 +21,7 @@
     <properties>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <jdk.min.version>17</jdk.min.version>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.39.4</quarkus.platform.version>
@@ -22,8 +29,6 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
-        <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
-        <version.source.plugin>3.4.0</version.source.plugin>
         <version.pnc>3.5.18</version.pnc>
         <version.pnc-api>3.6.0-SNAPSHOT</version.pnc-api>
         <version.pnc-common>3.5.4</version.pnc-common>
@@ -223,7 +228,6 @@
                 </exclusions>
             </dependency>
 
-
             <!-- OR maybe you like Jackson better? -->
             <dependency>
                 <groupId>com.konghq</groupId>
@@ -288,15 +292,6 @@
     </repositories>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.16.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
@@ -337,13 +332,12 @@
                     <tagNameFormat>@{project.version}${tagSuffix}</tagNameFormat>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <useReleaseProfile>false</useReleaseProfile>
-                    <releaseProfiles>release</releaseProfiles>
+                    <releaseProfiles>central-release</releaseProfiles>
                     <goals>deploy</goals>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -366,58 +360,6 @@
                 <quarkus.native.enabled>true</quarkus.native.enabled>
                 <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
             </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${version.source.plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${version.javadoc.plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <detectOfflineLinks>false</detectOfflineLinks>
-                                    <quiet>true</quiet>
-                                    <doclint>none</doclint>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.7</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>
