@@ -7,7 +7,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.faulttolerance.Retry;
-import org.jboss.pnc.api.causeway.dto.push.BuildPushCompleted;
 import org.jboss.pnc.api.deliverablesanalyzer.dto.AnalysisResult;
 import org.jboss.pnc.api.dto.OperationOutcome;
 import org.jboss.pnc.dingrogu.common.TaskHelper;
@@ -26,26 +25,6 @@ public class OrchClient {
 
     @Inject
     PNCClientAuth pncClientAuth;
-
-    @Retry
-    public void submitBuildPushResult(String orchUrl, String buildId, BuildPushCompleted result) {
-        String orchUrlWithoutPath = URI.create(orchUrl).resolve("/").toString();
-
-        Log.infof("BuildPushResult for buildid: %s is: %s", buildId, result);
-        HttpResponse<JsonNode> response = Unirest
-                .post(orchUrlWithoutPath + "pnc-rest/v2/builds/" + buildId + "/brew-push/complete")
-                .contentType(ContentType.APPLICATION_JSON)
-                .accept(ContentType.APPLICATION_JSON)
-                .headers(ClientHelper.getClientHeaders(pncClientAuth))
-                .body(result)
-                .asJson();
-
-        if (!response.isSuccess()) {
-            TaskHelper.LIVE_LOG
-                    .error("Request didn't go through: HTTP {}, body: {}", response.getStatus(), response.getBody());
-            throw new RuntimeException("Request didn't go through");
-        }
-    }
 
     @Retry
     public void submitDelAResult(String orchUrl, AnalysisResult result) {

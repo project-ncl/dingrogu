@@ -18,6 +18,5 @@ public class RepositoryDriverSetupDTO {
     String buildType;
     BuildCategory buildCategory;
     boolean tempBuild;
-    boolean brewPullActive;
     Map<String, String> genericParameters;
 }

@@ -20,7 +20,6 @@ public class RepourAdjustDTO {
     String id;
     String buildType;
     String defaultAlignmentParams;
-    boolean brewPullActive;
 
     Map<String, String> genericParameters;
 }

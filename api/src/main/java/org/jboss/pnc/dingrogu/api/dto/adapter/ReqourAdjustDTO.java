@@ -23,7 +23,6 @@ public class ReqourAdjustDTO {
     String id;
     BuildType buildType;
     String defaultAlignmentParams;
-    boolean brewPullActive;
 
     Map<String, String> genericParameters;
 }
