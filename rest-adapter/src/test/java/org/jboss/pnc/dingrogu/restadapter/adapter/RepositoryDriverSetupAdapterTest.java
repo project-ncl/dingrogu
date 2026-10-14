@@ -78,7 +78,6 @@ public class RepositoryDriverSetupAdapterTest {
         assertThat(generated.getBuildContentId()).isEqualTo(dto.getBuildContentId());
         assertThat(generated.getBuildType().name()).isEqualTo(dto.getBuildType());
         assertThat(generated.getBuildCategory()).isEqualTo(dto.getBuildCategory());
-        assertThat(generated.isBrewPullActive()).isEqualTo(dto.isBrewPullActive());
         List<String> removedRepositoriesUrl = adjustResponse.getManipulatorResult()
                 .getRemovedRepositories()
                 .stream()

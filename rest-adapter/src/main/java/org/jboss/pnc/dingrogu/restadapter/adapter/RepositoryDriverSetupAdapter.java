@@ -90,13 +90,13 @@ public class RepositoryDriverSetupAdapter implements Adapter<RepositoryDriverSet
                             .toList());
         }
 
-        RepositoryCreateRequest createRequest = new RepositoryCreateRequest(
-                repositorySetupDTO.getBuildContentId(),
-                BuildType.valueOf(repositorySetupDTO.getBuildType()),
-                repositorySetupDTO.getBuildCategory(),
-                repositorySetupDTO.isTempBuild(),
-                repositorySetupDTO.isBrewPullActive(),
-                repositoriesToCreate);
+        RepositoryCreateRequest createRequest = RepositoryCreateRequest.builder()
+                .buildContentId(repositorySetupDTO.getBuildContentId())
+                .buildType(BuildType.valueOf(repositorySetupDTO.getBuildType()))
+                .buildCategory(repositorySetupDTO.getBuildCategory())
+                .tempBuild(repositorySetupDTO.isTempBuild())
+                .extraRepositories(repositoriesToCreate)
+                .build();
 
         RepositoryCreateResponse response = repositoryDriverClient
                 .setup(repositorySetupDTO.getRepositoryDriverUrl(), createRequest);

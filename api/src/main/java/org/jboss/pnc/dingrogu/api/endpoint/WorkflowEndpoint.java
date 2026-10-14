@@ -11,7 +11,6 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
-import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DeliverablesAnalysisWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DummyWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.RepositoryCreationDTO;
@@ -30,28 +29,11 @@ import org.jboss.pnc.rex.model.requests.StartRequest;
 @Tag(name = "Workflow", description = "Workflow manipulation through that endpoint")
 public interface WorkflowEndpoint {
 
-    String BREW_PUSH_REX_NOTIFY = "/workflow/brew-push/rex-notify";
     String REPOSITORY_CREATION_REX_NOTIFY = "/workflow/repository-creation/rex-notify";
     String BUILD_REX_NOTIFY = "/workflow/build/rex-notify";
     String BUILD_CLEAR_ENVIRONMENT = "/workflow/build/clear-environment";
     String DELIVERABLES_ANALYSIS_REX_NOTIFY = "/workflow/deliverables-analysis/rex-notify";
     String DUMMY_REX_NOTIFY = "/workflow/dummy/rex-notify";
-
-    /**
-     * Start the brew push workflow
-     *
-     * @param brewPushWorkflowDTO dto
-     * @return DTO of the correlationId
-     */
-    @Path("/workflow/brew-push/start")
-    @POST
-    @RolesAllowed({ AuthorizationConstants.ADMIN_ROLE, AuthorizationConstants.DINGROGU_ROLE })
-    CorrelationId startBrewPushWorkflow(BrewPushWorkflowDTO brewPushWorkflowDTO);
-
-    @Path(BREW_PUSH_REX_NOTIFY)
-    @POST
-    @RolesAllowed({ AuthorizationConstants.ADMIN_ROLE, AuthorizationConstants.DINGROGU_ROLE })
-    Response brewPushNotificationFromRex(NotificationRequest notificationRequest);
 
     /**
      * Start the repository creation workflow

@@ -8,14 +8,12 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.pnc.dingrogu.api.dto.CorrelationId;
-import org.jboss.pnc.dingrogu.api.dto.workflow.BrewPushWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.BuildWorkflowClearEnvironmentDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DeliverablesAnalysisWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.DummyWorkflowDTO;
 import org.jboss.pnc.dingrogu.api.dto.workflow.RepositoryCreationDTO;
 import org.jboss.pnc.dingrogu.api.endpoint.WorkflowEndpoint;
 import org.jboss.pnc.dingrogu.restadapter.adapter.BuildDriverAdapter;
-import org.jboss.pnc.dingrogu.restworkflow.workflows.BrewPushWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.BuildWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.DeliverablesAnalysisWorkflow;
 import org.jboss.pnc.dingrogu.restworkflow.workflows.DummyWorkflow;
@@ -39,9 +37,6 @@ import io.quarkus.logging.Log;
  */
 @ApplicationScoped
 public class WorkflowEndpointImpl implements WorkflowEndpoint {
-
-    @Inject
-    BrewPushWorkflow brewPushWorkflow;
 
     @Inject
     RepositoryCreationWorkflow repositoryCreationWorkflow;
@@ -69,16 +64,6 @@ public class WorkflowEndpointImpl implements WorkflowEndpoint {
 
     @Inject
     ObjectMapper objectMapper;
-
-    @Override
-    public CorrelationId startBrewPushWorkflow(BrewPushWorkflowDTO brewPushWorkflowDTO) {
-        return brewPushWorkflow.submitWorkflow(brewPushWorkflowDTO);
-    }
-
-    @Override
-    public Response brewPushNotificationFromRex(NotificationRequest notificationRequest) {
-        return brewPushWorkflow.rexNotification(notificationRequest);
-    }
 
     @Override
     public Response repositoryCreationNotificationFromRex(NotificationRequest notificationRequest) {

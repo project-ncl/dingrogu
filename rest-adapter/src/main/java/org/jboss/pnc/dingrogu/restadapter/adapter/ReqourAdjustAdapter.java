@@ -99,7 +99,6 @@ public class ReqourAdjustAdapter implements Adapter<ReqourAdjustDTO> {
                 .taskId(reqourAdjustDTO.getId())
                 .buildType(reqourAdjustDTO.getBuildType())
                 .pncDefaultAlignmentParameters(reqourAdjustDTO.getDefaultAlignmentParams())
-                .brewPullActive(reqourAdjustDTO.isBrewPullActive())
                 .heartbeatConfig(startRequest.getHeartbeatConfig())
                 .build();
 
