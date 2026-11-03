@@ -69,7 +69,7 @@
     <version.pnc>3.5.23</version.pnc>
     <version.pnc-api>3.99.0</version.pnc-api>
     <version.pnc-common>3.5.4</version.pnc-common>
-    <version.rex>1.2.3</version.rex>
+    <version.rex>4.0.0</version.rex>
     <version.commons-lang>3.21.0</version.commons-lang>
     <tagSuffix/>
   </properties>
