@@ -19,8 +19,6 @@ You can run your application using:
 java -jar application/target/dingrogu-runner.jar
 ```
 
-The project is configured to build a uber-jar by default.
-
 # Rex Tutorial
 When creating the tasks to send to Rex, we'll create a graph request (aka `workflow` in Dingrogu) containing tasks, and
 the dependencies between the tasks. Each graph request has its own unique correlation id.
