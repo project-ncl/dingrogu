@@ -67,6 +67,14 @@ quarkus:
     credentials:
       secret: 1234
 
+  container-image:
+    registry: quay.io
+    group: rh-newcastle-devel
+    name: dingrogu-jib
+    additional-tags: latest
+  jib:
+    jvm-entrypoint: [/usr/bin/bash, run-java.sh]
+
   security:
     ldap:
       # enable LDAP: build-time property

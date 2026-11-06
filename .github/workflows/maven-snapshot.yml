@@ -11,6 +11,7 @@ jobs:
       uses: project-ncl/shared-github-actions/.github/workflows/maven-snapshot.yml@461b242bf215856b94e7b40f1ecfa06f7ebb1b45 # v0.0.26
       with:
         project_name: 'project-ncl/dingrogu'
+        quarkus_jib_image: true
       secrets:
         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
