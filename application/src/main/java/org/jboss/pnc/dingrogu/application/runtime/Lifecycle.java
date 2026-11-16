@@ -9,7 +9,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.runtime.Shutdown;
 import io.quarkus.runtime.Startup;
 import kong.unirest.core.Unirest;
-import kong.unirest.modules.jackson.JacksonObjectMapper;
+import kong.unirest.modules.jackson2.JacksonObjectMapper;
 
 @ApplicationScoped
 public class Lifecycle {

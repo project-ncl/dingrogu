@@ -231,7 +231,7 @@
       <!-- OR maybe you like Jackson better? -->
       <dependency>
         <groupId>com.konghq</groupId>
-        <artifactId>unirest-modules-jackson</artifactId>
+        <artifactId>unirest-modules-jackson-legacy</artifactId>
         <version>4.11.1</version>
       </dependency>
       <dependency>
