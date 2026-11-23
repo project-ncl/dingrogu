@@ -184,7 +184,7 @@
       <dependency>
         <groupId>com.konghq</groupId>
         <artifactId>unirest-java-core</artifactId>
-        <version>4.11.4</version>
+        <version>4.11.8</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.pnc</groupId>
